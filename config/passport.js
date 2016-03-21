@@ -2,6 +2,7 @@ var LocalStrategy = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
 var TwitterStrategy  = require('passport-twitter').Strategy;
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var LinkedInStrategy = require('passport-linkedin');
 
 var User = require('../app/models/user');
 var configAuth = require('./auth');
@@ -216,6 +217,58 @@ module.exports = function (passport) {
         });
 
     }));
+    
+    // =========================================================================
+    // Linkedin ==================================================================
+    // =========================================================================
+    passport.use(new LinkedInStrategy({
+        consumerKey: configAuth.linkedin.clientID,
+        consumerSecret: configAuth.linkedin.clientSecret,
+        callbackURL: configAuth.linkedin.callbackURL,
+        profileFields: ['id', 'first-name', 'last-name', 'email-address', 'headline']
+    },
+        // linkedin sends back the tokens and progile info
+        function (token, tokenSecret, profile, done) {
+            process.nextTick(function() {
+
+            // try to find the user based on their google id
+            User.findOne({ 'linkedin.id' : profile.id }, function(err, user) {
+                if (err)
+                    return done(err);
+
+                if (user) {
+ console.log(user);
+                    // if a user is found, log them in
+                    return done(null, user);
+                } else {
+                    console.log(profile);
+                    // if the user isnt in our database, create a new user
+                    var newUser          = new User();
+
+                    // set all of the relevant information
+                    newUser.linkedin.id    = profile.id; 
+                    newUser.linkedin.token = token;
+                    newUser.linkedin.name  = profile.displayName;
+                    newUser.linkedin.email  = profile.displayName;
+                     // pull the first email
+
+                    // save the user
+                    newUser.save(function(err) {
+                        if (err)
+                            throw err;
+                            
+                        console.log(newUser)    
+                        return done(null, newUser);
+                    });
+                }
+            });
+        });
+
+            
+        }
+
+        ));
+
 
 
 }

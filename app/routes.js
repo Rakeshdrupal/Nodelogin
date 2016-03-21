@@ -88,6 +88,14 @@ module.exports = function (app, passport) {
                     failureRedirect : '/'
             }));
 
+// Linkedin
+
+    app.get('/auth/linkedin', passport.authenticate('linkedin',{ scope: ['r_basicprofile', 'r_emailaddress'] }));
+    app.get('/auth/linkedin/callback',passport.authenticate('linkedin', {successRedirect: '/profile', failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication
+    res.json(req._user);
+  });
     // =====================================
     // LOGOUT ==============================
     // =====================================
